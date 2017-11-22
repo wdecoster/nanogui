@@ -12,13 +12,14 @@ import logging
 from datetime import datetime as dt
 import sys
 from version import __version__
-from time import time
+import time
 import webbrowser
+from argparse import ArgumentParser
 
 
 class nanoGui(tkinter.Frame):
     def __init__(self):
-        tkinter.Frame.__init__(self)
+        self.root = tkinter.Frame.__init__(self)
         self.master.title("Welcome to nanoGUI")
         self.master.rowconfigure(5, weight=1)
         self.master.columnconfigure(5, weight=1)
@@ -30,6 +31,8 @@ class nanoGui(tkinter.Frame):
         self.barcoded = tkinter.BooleanVar(None, False)
         self.loglength = tkinter.BooleanVar(None, False)
         self.n50 = tkinter.BooleanVar(None, False)
+        self.maxlength = tkinter.IntVar(None, None)
+        self.minqual = tkinter.IntVar(None, None)
         ttk.Label(self, text='Which data type do you want to analyze?').grid(column=0, row=0)
         sources = {"summary": 'Summary file', "fastq_rich": 'Fastq file(s)', "bam": 'Bam file'}
         for i, source in enumerate(sources.keys()):
@@ -58,15 +61,15 @@ class nanoGui(tkinter.Frame):
             ttk.Button(self,
                        text="Start plotting",
                        command=self.run,
-                       ).grid(column=0, row=12, sticky=tkinter.W, padx=3, pady=3)
+                       ).grid(column=0, row=6, sticky=tkinter.W, padx=3, pady=3)
             ttk.Button(self,
                        text="More Options",
                        command=self.flick_more_options,
-                       ).grid(column=0, row=13, sticky=tkinter.W, padx=3, pady=3)
+                       ).grid(column=0, row=7, sticky=tkinter.W, padx=3, pady=3)
 
     def flick_summary_options(self):
         if self.source.get() == "summary":
-            self.subframe = ttk.Frame()
+            self.subframe = ttk.Frame(self.root)
             self.subframe.grid(column=1, row=0, sticky=tkinter.W + tkinter.N, pady=10, padx=10)
             ttk.Label(self.subframe, text="Which type of sequencing?").grid(
                 column=0, row=1, padx=3, pady=3)
@@ -90,9 +93,10 @@ class nanoGui(tkinter.Frame):
 
     def flick_more_options(self):
         if not hasattr(self, "optframe"):
-            self.optframe = ttk.Frame()
+            self.optframe = ttk.Frame(self.root)
             self.optframe.grid(column=0, row=14, sticky=tkinter.W + tkinter.N,  pady=10, padx=10)
-            ttk.Label(self.optframe, text="Which output format?").grid(column=0, row=0, padx=20)
+            ttk.Label(self.optframe, text="Which output format?"
+                      ).grid(column=0, row=0, padx=20)
             ttk.Radiobutton(self.optframe,
                             text='png',
                             variable=self.figformat,
@@ -104,7 +108,8 @@ class nanoGui(tkinter.Frame):
                                 variable=self.figformat,
                                 value=t,
                                 ).grid(column=0, row=2 + i, sticky=tkinter.W, padx=20, pady=3)
-            ttk.Label(self.optframe, text="Which plotting color?").grid(column=1, row=0, padx=20)
+            ttk.Label(self.optframe, text="Which plotting color?"
+                      ).grid(column=1, row=0, padx=20)
             for i, c in enumerate(['blue', 'red', 'green', 'orange', "purple", "yellow"]):
                 ttk.Radiobutton(self.optframe,
                                 text=c,
@@ -119,23 +124,59 @@ class nanoGui(tkinter.Frame):
                             text="Show N50 on histograms",
                             variable=self.n50
                             ).grid(column=2, row=2, sticky=tkinter.W, padx=3, pady=3)
+            vcmd = (self.register(self.validate_integer),
+                    '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
+            ttk.Label(self.optframe, text="Maximal read length for plotting?"
+                      ).grid(column=2, row=3, padx=20)
+            ttk.Entry(self.optframe,
+                      textvariable=self.maxlength,
+                      validate='key',
+                      validatecommand=vcmd
+                      ).grid(column=2, row=4, sticky=tkinter.W, padx=3, pady=3)
+            ttk.Label(self.optframe, text="Minimal quality for plotting?"
+                      ).grid(column=2, row=5, padx=20)
+            ttk.Entry(self.optframe,
+                      textvariable=self.minqual,
+                      validate='key',
+                      validatecommand=vcmd
+                      ).grid(column=2, row=6, sticky=tkinter.W, padx=3, pady=3)
         else:
             self.optframe.grid_remove()
             delattr(self, "optframe")
 
+    def validate_integer(self, action, index, value_if_allowed, prior_value,
+                         text, validation_type, trigger_type, widget_name):
+        """Check if text Entry is valid (number).
+
+        I have no idea what all these arguments are doing here but took this from
+        https://stackoverflow.com/questions/8959815/restricting-the-value-in-tkinter-entry-widget
+        """
+        if(action == '1'):
+            if text in '0123456789.-+':
+                try:
+                    int(value_if_allowed)
+                    return True
+                except ValueError:
+                    return False
+            else:
+                return False
+        else:
+            return True
+
     def run(self):
         ttk.Label(self, text="Processing... please be patient."
-                  ).grid(column=1, row=12, sticky=tkinter.W, padx=3, pady=3)
+                  ).grid(column=1, row=6, sticky=tkinter.W, padx=3, pady=3)
+        self.update_idletasks()
         try:
             utils.make_output_dir(self.destdir)
             settings = {
                 'alength': False,
                 "drop_outliers": False,
-                "maxlength": False,
-                "minqual": False,
+                "maxlength": self.maxlength.get(),
+                "minqual": self.minqual.get(),
                 "loglength": self.loglength.get(),
                 "downsample": 10000,
-                "no_N50": self.n50.get(),
+                "no_N50": not self.n50.get(),
                 "bam": False,
                 "summary": False,
                 "fastq": False,
@@ -168,16 +209,21 @@ class nanoGui(tkinter.Frame):
                 plots = nanoplot.make_plots(datadf, settings)
             html_report = nanoplot.make_report(plots, settings["path"], logfile)
             logging.info("Finished!")
+            ttk.Label(self, text="Finished, opening web browser."
+                      ).grid(column=1, row=6, sticky=tkinter.W, padx=3, pady=3)
+            self.update_idletasks()
             webbrowser.open(html_report, new=2)
-            self.destroy()
         except Exception as e:
             logging.error(e, exc_info=True)
+            ttk.Label(self, text="Something unexpected happened and NanoPlot has crashed."
+                      ).grid(column=1, row=6, sticky=tkinter.W, padx=3, pady=3)
+            self.update_idletasks()
             raise
 
 
 def init_logs():
     """Initiate log file."""
-    start_time = dt.fromtimestamp(time()).strftime('%Y%m%d_%H%M')
+    start_time = dt.fromtimestamp(time.time()).strftime('%Y%m%d_%H%M')
     logname = os.path.join(os.path.expanduser("~") + "/nanoGUI_" + start_time + ".log")
     handlers = [logging.FileHandler(logname)]
     logging.basicConfig(
@@ -189,6 +235,18 @@ def init_logs():
     return logname
 
 
+def get_args():
+    parser = ArgumentParser(description="Gui for NanoPlot".upper())
+    parser.add_argument("-d", "--debug",
+                        action="store_true",
+                        help="create logfile creating debug info in $HOME")
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
-    logfile = init_logs()
+    args = get_args()
+    if args.debug:
+        logfile = init_logs()
+    else:
+        logfile = None
     nanoG = nanoGui().mainloop()
