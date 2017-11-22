@@ -5,9 +5,8 @@ import os
 import nanoplot.utils as utils
 import nanoplot.NanoPlot as nanoplot
 from nanoget import get_input
-import nanoplotter
-import nanomath
-from os import path
+from nanoplotter import check_valid_format
+from nanomath import write_stats
 import logging
 from datetime import datetime as dt
 import sys
@@ -19,6 +18,9 @@ from argparse import ArgumentParser
 
 class nanoGui(tkinter.Frame):
     def __init__(self):
+        s = ttk.Style()
+        if 'alt' in s.theme_names():
+            s.theme_use('alt')
         self.root = tkinter.Frame.__init__(self)
         self.master.title("Welcome to nanoGUI")
         self.master.rowconfigure(5, weight=1)
@@ -33,15 +35,32 @@ class nanoGui(tkinter.Frame):
         self.n50 = tkinter.BooleanVar(None, False)
         self.maxlength = tkinter.IntVar(None, None)
         self.minqual = tkinter.IntVar(None, None)
-        ttk.Label(self, text='Which data type do you want to analyze?').grid(column=0, row=0)
+        ttk.Label(self,
+                  text='Which data type do you want to analyze?',
+                  ).grid(column=0, row=0)
         sources = {"summary": 'Summary file', "fastq_rich": 'Fastq file(s)', "bam": 'Bam file'}
         for i, source in enumerate(sources.keys()):
             ttk.Radiobutton(self,
                             text=sources[source],
                             variable=self.source,
                             value=source,
-                            command=self.flick_summary_options
+                            command=self.selected_source
                             ).grid(column=0, row=1 + i, sticky=tkinter.W, padx=3, pady=3)
+        ttk.Label(self, text="Which type of sequencing?").grid(
+            column=1, row=0, padx=75, pady=3)
+        self.readtypes = []
+        for i, t in enumerate(['1D', '2D', '1D2']):
+            a = ttk.Radiobutton(self,
+                                text=t,
+                                variable=self.readtype,
+                                value=t,
+                                state=tkinter.DISABLED)
+            a.grid(column=1, row=1 + i, sticky=tkinter.W, padx=75, pady=3)
+            self.readtypes.append(a)
+        ttk.Checkbutton(self,
+                        text="Split barcodes",
+                        variable=self.barcoded
+                        ).grid(column=2, row=2, sticky=tkinter.W, padx=3, pady=3)
 
     def select_file_and_add(self):
         self.targetfile = filedialog.askopenfile(initialdir=os.path.expanduser("~"))
@@ -67,25 +86,13 @@ class nanoGui(tkinter.Frame):
                        command=self.flick_more_options,
                        ).grid(column=0, row=7, sticky=tkinter.W, padx=3, pady=3)
 
-    def flick_summary_options(self):
+    def selected_source(self):
         if self.source.get() == "summary":
-            self.subframe = ttk.Frame(self.root)
-            self.subframe.grid(column=1, row=0, sticky=tkinter.W + tkinter.N, pady=10, padx=10)
-            ttk.Label(self.subframe, text="Which type of sequencing?").grid(
-                column=0, row=1, padx=3, pady=3)
-            for i, t in enumerate(['1D', '2D', '1D2']):
-                ttk.Radiobutton(self.subframe,
-                                text=t,
-                                variable=self.readtype,
-                                value=t
-                                ).grid(column=0, row=2 + i, sticky=tkinter.W, padx=3, pady=3)
-            ttk.Checkbutton(self.subframe,
-                            text="Split barcodes",
-                            variable=self.barcoded
-                            ).grid(column=1, row=3, sticky=tkinter.W, padx=3, pady=3)
+            for i in self.readtypes:
+                i.config(state=tkinter.NORMAL)
         else:
-            if hasattr(self, "subframe"):
-                self.subframe.grid_remove()
+            for i in self.readtypes:
+                i.config(state=tkinter.DISABLED)
         ttk.Button(self,
                    text='Select data file(s)',
                    command=self.select_file_and_add
@@ -119,11 +126,11 @@ class nanoGui(tkinter.Frame):
             ttk.Checkbutton(self.optframe,
                             text="Log transform read lengths",
                             variable=self.loglength
-                            ).grid(column=2, row=1, sticky=tkinter.W, padx=3, pady=3)
+                            ).grid(column=2, row=1, sticky=tkinter.W, padx=20, pady=3)
             ttk.Checkbutton(self.optframe,
                             text="Show N50 on histograms",
                             variable=self.n50
-                            ).grid(column=2, row=2, sticky=tkinter.W, padx=3, pady=3)
+                            ).grid(column=2, row=2, sticky=tkinter.W, padx=20, pady=3)
             vcmd = (self.register(self.validate_integer),
                     '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
             ttk.Label(self.optframe, text="Maximal read length for plotting?"
@@ -132,14 +139,14 @@ class nanoGui(tkinter.Frame):
                       textvariable=self.maxlength,
                       validate='key',
                       validatecommand=vcmd
-                      ).grid(column=2, row=4, sticky=tkinter.W, padx=3, pady=3)
+                      ).grid(column=2, row=4, sticky=tkinter.W, padx=20, pady=3)
             ttk.Label(self.optframe, text="Minimal quality for plotting?"
                       ).grid(column=2, row=5, padx=20)
             ttk.Entry(self.optframe,
                       textvariable=self.minqual,
                       validate='key',
                       validatecommand=vcmd
-                      ).grid(column=2, row=6, sticky=tkinter.W, padx=3, pady=3)
+                      ).grid(column=2, row=6, sticky=tkinter.W, padx=20, pady=3)
         else:
             self.optframe.grid_remove()
             delattr(self, "optframe")
@@ -182,7 +189,7 @@ class nanoGui(tkinter.Frame):
                 "fastq": False,
                 "readtype": self.readtype.get(),
                 "barcoded": self.barcoded.get(),
-                "format": nanoplotter.check_valid_format(self.figformat.get()),
+                "format": check_valid_format(self.figformat.get()),
                 "color": self.color.get(),
                 "plots": ["kde", "hex", "dot"],
                 "title": None,
@@ -196,14 +203,14 @@ class nanoGui(tkinter.Frame):
                 readtype=settings["readtype"],
                 combine="simple",
                 barcoded=settings["barcoded"])
-            nanomath.write_stats(datadf, settings["path"] + "NanoStats.txt")
+            write_stats(datadf, settings["path"] + "NanoStats.txt")
             logging.info("Calculated statistics")
             datadf, settings = nanoplot.filter_data(datadf, settings)
             if settings["barcoded"]:
                 for barc in list(datadf["barcode"].unique()):
-                    settings["path"] = path.join(self.destdir, barc + "_")
+                    settings["path"] = os.path.join(self.destdir, barc + "_")
                     dfbarc = datadf[datadf["barcode"] == barc]
-                    nanomath.write_stats(dfbarc, settings["path"] + "NanoStats.txt")
+                    write_stats(dfbarc, settings["path"] + "NanoStats.txt")
                     nanoplot.make_plots(dfbarc, settings)
             else:
                 plots = nanoplot.make_plots(datadf, settings)
