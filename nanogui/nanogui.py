@@ -10,14 +10,15 @@ from nanomath import write_stats
 import logging
 from datetime import datetime as dt
 import sys
-from version import __version__
+from .version import __version__
 import time
 import webbrowser
 from argparse import ArgumentParser
 
 
 class nanoGui(tkinter.Frame):
-    def __init__(self):
+    def __init__(self, logfile):
+        self.logfile = logfile
         s = ttk.Style()
         if 'alt' in s.theme_names():
             s.theme_use('alt')
@@ -214,7 +215,7 @@ class nanoGui(tkinter.Frame):
                     nanoplot.make_plots(dfbarc, settings)
             else:
                 plots = nanoplot.make_plots(datadf, settings)
-            html_report = nanoplot.make_report(plots, settings["path"], logfile)
+            html_report = nanoplot.make_report(plots, settings["path"], self.logfile)
             logging.info("Finished!")
             ttk.Label(self, text="Finished, opening web browser."
                       ).grid(column=1, row=6, sticky=tkinter.W, padx=3, pady=3)
@@ -226,6 +227,15 @@ class nanoGui(tkinter.Frame):
                       ).grid(column=1, row=6, sticky=tkinter.W, padx=3, pady=3)
             self.update_idletasks()
             raise
+
+
+def main():
+    args = get_args()
+    if args.debug:
+        logfile = init_logs()
+    else:
+        logfile = None
+    nanoGui(logfile).mainloop()
 
 
 def init_logs():
@@ -251,9 +261,4 @@ def get_args():
 
 
 if __name__ == '__main__':
-    args = get_args()
-    if args.debug:
-        logfile = init_logs()
-    else:
-        logfile = None
-    nanoG = nanoGui().mainloop()
+    main()
