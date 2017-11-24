@@ -16,7 +16,7 @@ import webbrowser
 from argparse import ArgumentParser
 
 
-class nanoGui(tkinter.Frame):
+class toolSelector(tkinter.Frame):
     def __init__(self, logfile):
         self.logfile = logfile
         s = ttk.Style()
@@ -24,6 +24,38 @@ class nanoGui(tkinter.Frame):
             s.theme_use('alt')
         self.root = tkinter.Frame.__init__(self)
         self.master.title("Welcome to nanoGUI")
+        self.master.rowconfigure(5, weight=1)
+        self.master.columnconfigure(5, weight=1)
+        self.grid(sticky=tkinter.W + tkinter.E + tkinter.N + tkinter.S, padx=10, pady=10)
+        ttk.Label(self,
+                  text='Which tool do you want to use?',
+                  ).grid(column=0, row=0, sticky=tkinter.W, padx=3, pady=3)
+        ttk.Button(self,
+                   text="NanoPlot",
+                   command=self.start_nanoplotgui,
+                   ).grid(column=0, row=1, sticky=tkinter.W, padx=3, pady=3)
+        ttk.Button(self,
+                   text="NanoComp",
+                   command=self.start_nanocompgui,
+                   ).grid(column=0, row=2, sticky=tkinter.W, padx=3, pady=3)
+
+    def start_nanoplotgui(self):
+        self.destroy()
+        nanoplotgui(self.logfile)
+
+    def start_nanocompgui(self):
+        self.destroy()
+        nanocompgui(self.logfile)
+
+
+class nanoPlotGui(tkinter.Frame):
+    def __init__(self, logfile):
+        self.logfile = logfile
+        s = ttk.Style()
+        if 'alt' in s.theme_names():
+            s.theme_use('alt')
+        self.root = tkinter.Frame.__init__(self)
+        self.master.title("Welcome to NanoPlot")
         self.master.rowconfigure(5, weight=1)
         self.master.columnconfigure(5, weight=1)
         self.grid(sticky=tkinter.W + tkinter.E + tkinter.N + tkinter.S, padx=10, pady=10)
@@ -204,7 +236,9 @@ class nanoGui(tkinter.Frame):
                 readtype=settings["readtype"],
                 combine="simple",
                 barcoded=settings["barcoded"])
-            write_stats(datadf, settings["path"] + "NanoStats.txt")
+            write_stats(
+                datadfs=[datadf],
+                outputfile=settings["path"] + "NanoStats.txt")
             logging.info("Calculated statistics")
             datadf, settings = nanoplot.filter_data(datadf, settings)
             if settings["barcoded"]:
@@ -215,7 +249,11 @@ class nanoGui(tkinter.Frame):
                     nanoplot.make_plots(dfbarc, settings)
             else:
                 plots = nanoplot.make_plots(datadf, settings)
-            html_report = nanoplot.make_report(plots, settings["path"], self.logfile)
+            html_report = nanoplot.make_report(
+                plots=plots,
+                path=settings["path"],
+                logfile=self.logfile,
+                statsfile=settings["path"] + "NanoStats.txt")
             logging.info("Finished!")
             ttk.Label(self, text="Finished, opening web browser."
                       ).grid(column=1, row=6, sticky=tkinter.W, padx=3, pady=3)
@@ -235,7 +273,16 @@ def main():
         logfile = init_logs()
     else:
         logfile = None
-    nanoGui(logfile).mainloop()
+    toolSelector(logfile).mainloop()
+
+
+def nanoplotgui(logfile):
+    nanoPlotGui(logfile).mainloop()
+
+
+def nanocompgui(logfile):
+    print("not implemented")
+    # nanoPlotGui(logfile).mainloop()
 
 
 def init_logs():
