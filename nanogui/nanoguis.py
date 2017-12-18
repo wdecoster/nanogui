@@ -10,12 +10,144 @@ from nanoplotter import check_valid_format
 from nanomath import write_stats
 import logging
 import webbrowser
+# import subprocess
+# import shlex
 
 
 class Dataset(object):
     def __init__(self, path, name):
         self.path = path
         self.name = name
+
+
+# class nanoFiltGui(tkinter.Frame):
+#     def __init__(self, logfile):
+#         self.logfile = logfile
+#         s = ttk.Style()
+#         if 'alt' in s.theme_names():
+#             s.theme_use('alt')
+#         self.root = tkinter.Frame.__init__(self)
+#         self.master.title("Welcome to NanoFilt")
+#         self.master.rowconfigure(5, weight=1)
+#         self.master.columnconfigure(5, weight=1)
+#         self.grid(sticky=tkinter.W + tkinter.E + tkinter.N + tkinter.S, padx=10, pady=10)
+#         self.sourcefastq = tkinter.StringVar()
+#         self.destfastq = tkinter.StringVar()
+#         self.minlength = tkinter.IntVar()
+#         self.minqual = tkinter.IntVar()
+#         self.minGC = tkinter.IntVar()
+#         self.maxGC = tkinter.IntVar()
+#         self.filebutton = ttk.Button(self,
+#                                      text='Select input fastq.gz file',
+#                                      command=self.select_file_and_add
+#                                      )
+#         self.filebutton.grid(column=0, row=2, sticky=tkinter.W, padx=3, pady=3)
+#         vcmd = (self.register(self.validate_integer),
+#                 '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
+#
+#         ttk.Label(self, text="Minimal read length?"
+#                   ).grid(column=1, row=2, padx=20)
+#         ttk.Entry(self,
+#                   textvariable=self.minlength,
+#                   validate='key',
+#                   validatecommand=vcmd
+#                   ).grid(column=2, row=2, sticky=tkinter.W, padx=20, pady=3)
+#
+#         ttk.Label(self, text="Minimal average basecall quality?"
+#                   ).grid(column=1, row=3, padx=20)
+#         ttk.Entry(self,
+#                   textvariable=self.minqual,
+#                   validate='key',
+#                   validatecommand=vcmd
+#                   ).grid(column=2, row=3, sticky=tkinter.W, padx=20, pady=3)
+#
+#         ttk.Label(self, text="Minimal GC content?"
+#                   ).grid(column=1, row=4, padx=20)
+#         ttk.Entry(self,
+#                   textvariable=self.minGC,
+#                   validate='key',
+#                   validatecommand=vcmd
+#                   ).grid(column=2, row=4, sticky=tkinter.W, padx=20, pady=3)
+#
+#         ttk.Label(self, text="Maximal GC content?"
+#                   ).grid(column=1, row=5, padx=20)
+#         ttk.Entry(self,
+#                   textvariable=self.maxGC,
+#                   validate='key',
+#                   validatecommand=vcmd
+#                   ).grid(column=2, row=5, sticky=tkinter.W, padx=20, pady=3)
+#
+#     def select_file_and_add(self):
+#         self.sourcefastq = filedialog.askopenfile(initialdir=os.path.expanduser("~"))
+#         if self.sourcefastq:
+#             ttk.Label(self, text=os.path.basename(self.sourcefastq.name)[:40]
+#                       ).grid(column=0, row=3, sticky=tkinter.W, padx=3, pady=3)
+#             ttk.Button(self,
+#                        text='Select output fastq.gz',
+#                        command=self.select_destfq_and_add
+#                        ).grid(column=0, row=4, sticky=tkinter.W, padx=3, pady=3)
+#
+#     def select_destfq_and_add(self):
+#         self.destfastq = filedialog.asksaveasfilename()
+#         if self.destfastq:
+#             ttk.Label(self, text=self.destfastq
+#                       ).grid(column=0, row=5, sticky=tkinter.W, padx=3, pady=3)
+#             self.runbutton = ttk.Button(self,
+#                                         text="Start filtering",
+#                                         command=self.run,
+#                                         )
+#             self.runbutton.grid(column=0, row=6, sticky=tkinter.W, padx=3, pady=3)
+#
+#     def validate_integer(self, action, index, value_if_allowed, prior_value,
+#                          text, validation_type, trigger_type, widget_name):
+#         """Check if text Entry is valid (number).
+#
+#         I have no idea what all these arguments are doing here but took this from
+#         https://stackoverflow.com/questions/8959815/restricting-the-value-in-tkinter-entry-widget
+#         """
+#         if(action == '1'):
+#             if text in '0123456789.-+':
+#                 try:
+#                     int(value_if_allowed)
+#                     return True
+#                 except ValueError:
+#                     return False
+#             else:
+#                 return False
+#         else:
+#             return True
+#
+#     def run(self):
+#         """gunzip -c input.fastq.gz | \
+#            NanoFilt -q Q -l L --minGC iGC --maxGC aGC | \
+#            gzip > output.fastq.gz
+#         """
+#         inp = subprocess.Popen(shlex.split("gunzip -c " + self.sourcefastq.name),
+#                                stdout=subprocess.PIPE)
+#         cmd = "NanoFilt "
+#
+#         minqual = self.minqual.get()
+#         if minqual:
+#             cmd += "-q " + str(minqual) + " "
+#
+#         minlength = self.minlength.get()
+#         if minlength:
+#             cmd += "-l " + str(minlength) + " "
+#
+#         minGC = self.minGC.get()
+#         if minGC:
+#             cmd += "--minGC " + str(minGC) + " "
+#
+#         maxGC = self.maxGC.get()
+#         if maxGC:
+#             cmd += "--maxGC " + str(maxGC) + " "
+#
+#         filt = subprocess.check_output(shlex.split(cmd),
+#                                        stdin=inp.stdout,
+#                                        stdout=subprocess.PIPE)
+#         subprocess.check_output(shlex.split("gzip"),
+#                                 stdin=filt.stdout,
+#                                 stdout=open(self.destfastq, 'wb'))
 
 
 class nanoCompGui(tkinter.Frame):
@@ -109,11 +241,6 @@ class nanoCompGui(tkinter.Frame):
             self.left_optframe.grid(column=0, row=0, sticky=tkinter.W + tkinter.N, padx=10)
             ttk.Label(self.left_optframe, text="Which output format?"
                       ).grid(column=0, row=0)
-            # ttk.Radiobutton(self.left_optframe,
-            #                 text='png',
-            #                 variable=self.figformat,
-            #                 value='png',
-            #                 ).grid(column=0, row=1, sticky=tkinter.W, padx=20, pady=3)
             for i, t in enumerate(['png', 'svg', 'pdf', 'jpeg', 'tif', 'eps']):
                 ttk.Radiobutton(self.left_optframe,
                                 text=t,

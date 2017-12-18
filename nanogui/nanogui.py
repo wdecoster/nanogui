@@ -10,6 +10,7 @@ import time
 from argparse import ArgumentParser
 from nanogui.nanoguis import nanoPlotGui as nanoPlotGui
 from nanogui.nanoguis import nanoCompGui as nanoCompGui
+# from nanogui.nanoguis import nanoFiltGui as nanoFiltGui
 
 
 class toolSelector(tkinter.Frame):
@@ -34,6 +35,10 @@ class toolSelector(tkinter.Frame):
                    text="NanoComp",
                    command=self.start_nanocompgui,
                    ).grid(column=0, row=2, sticky=tkinter.W, padx=3, pady=3)
+        # ttk.Button(self,
+        #            text="NanoFilt",
+        #            command=self.start_nanofiltgui,
+        #            ).grid(column=1, row=1, sticky=tkinter.W, padx=3, pady=3)
 
     def start_nanoplotgui(self):
         self.destroy()
@@ -42,6 +47,10 @@ class toolSelector(tkinter.Frame):
     def start_nanocompgui(self):
         self.destroy()
         nanocompgui(self.logfile)
+
+    # def start_nanofiltgui(self):
+    #     self.destroy()
+    #     nanofiltgui(self.logfile)
 
 
 def main():
@@ -59,6 +68,10 @@ def nanoplotgui(logfile):
 
 def nanocompgui(logfile):
     nanoCompGui(logfile).mainloop()
+
+
+# def nanofiltgui(logfile):
+#     nanoFiltGui(logfile).mainloop()
 
 
 def init_logs():
